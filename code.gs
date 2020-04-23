@@ -5,7 +5,8 @@ function main() {
 }
 
 function getPlaces() {
-    var mapPage = UrlFetchApp.fetch("https://www.google.com/maps/d/u/1/viewer?mid=1vOHuW8c0lTLdo7fA__cJGCmmcTP9rq6a&ll=51.19241978650809%2C-0.10540584999989733&z=9");
+    var myMapsPage = "https://www.google.com/maps/d/u/1/viewer?mid=1vOHuW8c0lTLdo7fA__cJGCmmcTP9rq6a&ll=51.19241978650809%2C-0.10540584999989733&z=9";
+    var mapPage = UrlFetchApp.fetch(MyMapsPage);
     var sourceCode = mapPage.getContentText(); //returns String with HTML page code
     var places = []; //multidimensional array with each position being [country,city,placeName,type,coordenate] 
     var start = 0;
@@ -32,7 +33,6 @@ function getPlaces() {
     return places;
 }
 
-//TODO função pode ser chamada em getPlaces()
 function getColumnInfo(places) {
     for (var index = 0; index < places.length; index++) {
         var latitude = places[index][4].split(",")[0];
@@ -40,11 +40,20 @@ function getColumnInfo(places) {
       
         var address = Maps.newGeocoder().reverseGeocode(latitude, longitude);
         var compound_code = address.plus_code.compound_code.split(",");
-        var country = LanguageApp.translate(compound_code[compound_code.length - 1].trim(), 'en', 'pt');
-        var city = LanguageApp.translate(compound_code[compound_code.length - 2].split(" ")[1], 'en', 'pt');
+        
+        /*Translates the country and city names to another language (other than English)
+        * You can replace 'pt' (Portuguese) with the desired language
+        */
+        var language = 'pt';
+        var country = LanguageApp.translate(compound_code[compound_code.length - 1].trim(), 'en', language);
+        var city = LanguageApp.translate(compound_code[compound_code.length - 2].split(" ")[1], 'en', language);
         
       var types = address.results[0].types;
-      var type = false; var i = 0;
+      var type = false; var i = 0;   
+      /*Finds the type of place and puts it in a category
+      * The types are translated to portuguese here but they are, in order of appearence:
+      * Food; Activity; Landscape; Shopping; Museum; Lodging; Other
+      */
       while (type == false) {
         switch (types[i]) {
           case "bakery": case "bar": case "cafe": case "restaurant": case "food":
@@ -94,7 +103,9 @@ function writeToSheet(places) {
 }
 
 function checkExistingPlaces(spreadsheet, name, city) {
+    //Spreadsheet column that stores the names of the places, in this case it is the 3rd column
     var namesColumn = spreadsheet.getRange(2, 3, spreadsheet.getLastRow()).getValues();
+    //Spreadsheet column that stores the names of the cities, in this case it is the 2nd column
     var citiesColumn = spreadsheet.getRange(2, 2, spreadsheet.getLastRow()).getValues();
 
     //search starts at the first index where the city appears in the column "Localidade"
